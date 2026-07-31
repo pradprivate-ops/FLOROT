@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FLOROT · for Florii 🌸</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Ambient background -->
+  <div class="bg-glow bg-glow--one"></div>
+  <div class="bg-glow bg-glow--two"></div>
+  <div class="bg-petals" id="bgPetals"></div>
+
+  <!-- ============ ENTRANCE / ORB SCREEN ============ -->
+  <section id="orbScreen" class="orb-screen">
+    <div class="orb-wrap">
+      <div class="orb-ring orb-ring--outer"></div>
+      <div class="orb-ring orb-ring--mid"></div>
+      <div class="orb-core">
+        <span class="orb-core__glyph">🌸</span>
+      </div>
+      <div class="orb-particles">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+    <p class="orb-status" id="orbStatus">waking up FLOROT<span class="dots"><span>.</span><span>.</span><span>.</span></span></p>
+  </section>
+
+  <!-- ============ MAIN APP ============ -->
+  <div id="app" class="app hidden">
+
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-orb">
+          <span class="brand-orb__pulse"></span>
+          <span class="brand-orb__glyph">🌸</span>
+        </div>
+        <div class="brand-text">
+          <h1>FLOROT</h1>
+          <p id="statusLine">online · made with love by Prady</p>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <button id="voiceToggleBtn" class="pill-btn" title="Toggle FLOROT's spoken voice" aria-pressed="true">
+          <span class="ico">🔊</span><span class="lbl">Voice On</span>
+        </button>
+        <button id="songBtn" class="pill-btn pill-btn--gold" title="Play Pradyot's song">
+          <span class="ico">🎵</span><span class="lbl">Play My Song</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="chat-shell">
+      <div class="chat-window" id="chatWindow" aria-live="polite"></div>
+
+      <div class="quick-chips" id="quickChips">
+        <button class="chip" data-cmd="play voice">🎵 play voice</button>
+        <button class="chip" data-cmd="websites">💌 websites</button>
+        <button class="chip" data-cmd="tell me about us">💞 our story</button>
+        <button class="chip" data-cmd="i love you">😘 i love you</button>
+      </div>
+
+      <form id="composer" class="composer">
+        <button type="button" id="micBtn" class="icon-btn mic-btn" title="Speak to FLOROT">
+          <span class="mic-pulse"></span>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </button>
+
+        <input
+          type="text"
+          id="userInput"
+          class="text-input"
+          placeholder="Escribí algo, mi amor…"
+          autocomplete="off"
+        />
+
+        <button type="submit" id="sendBtn" class="icon-btn send-btn" title="Send">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </form>
+
+      <p class="mic-status" id="micStatus"></p>
+    </main>
+  </div>
+
+  <!-- Floating song button (always visible, even before chat loads) -->
+  <button id="floatingSongBtn" class="floating-song-btn" title="Play Pradyot's song for Florii">
+    <span class="floating-song-btn__ring"></span>
+    🎵
+  </button>
+
+  <!-- Local audio file - place ya_fue.mp4 in the same folder as this file -->
+  <audio id="songAudio" src="ya_fue.mp4" preload="none"></audio>
+
+  <script src="script.js"></script>
+</body>
+</html>
