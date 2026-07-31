@@ -3,7 +3,7 @@
 =========================================================== */
 
 /* ---------------------- ElevenLabs Config ---------------------- */
-const ELEVENLABS_API_KEY = "sk_8f77c1af515c47fedef1e5d70da354201a2df26d5bf1050c";
+const ELEVENLABS_API_KEY = "sk_cc2e7064f71f8099bdaa8653ce1afaa4a450f9f33f8b6de8";
 
 // Expressive Female Voice ID (Rachel / Emotional Female)
 const VOICE_ID = "21m00Tcm4TlvDq8ikWAM"; 
