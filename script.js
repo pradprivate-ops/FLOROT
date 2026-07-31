@@ -29,7 +29,7 @@ const PROXY_ENDPOINT = "/api/florot"; // your own serverless function, if USE_PR
 
 // Placeholders — replace with your own freshly-rotated keys if not using a proxy.
 const ELEVENLABS_API_KEY_B64 = "sk_15cee8bae0a25807c05cfa2e211d66815bf1cc431e6d9718";
-const GEMINI_API_KEY_B64     = "QVEuQWI4Uk42SlVpT0s4SzRXVUlxYnNUUUV5VmNhTjNZZU1DUHB1eVotV3AwSWRtVTZDQlE=";
+const GEMINI_API_KEY_B64     = "AQ.Ab8RN6JUiOK8K4WUIqbsTQEyVcaN3YeMCPpuyZ-Wp0IdmU6CBQ";
 
 function getElevenLabsKey() { return atob(ELEVENLABS_API_KEY_B64); }
 function getGeminiKey()     { return atob(GEMINI_API_KEY_B64); }
