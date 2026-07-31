@@ -9,12 +9,11 @@ const ELEVENLABS_API_KEY = "sk_cc2e7064f71f8099bdaa8653ce1afaa4a450f9f33f8b6de8"
 const VOICE_ID = "21m00Tcm4TlvDq8ikWAM"; 
 
 /* ---------------------- Gemini AI Config ---------------------- */
-// Get your free key from: https://aistudio.google.com/
 const GEMINI_API_KEY = "AQ.Ab8RN6JQas2DCJDqwPh0JP0CV_fckqbAFgHMXvfEFBZxiwDhVA"; 
 
 /* ---------------------- DOM refs ---------------------- */
 
-const orbScreen   = document.getElementById('orbScreen');
+const orbScreen    = document.getElementById('orbScreen');
 const orbStatus    = document.getElementById('orbStatus');
 const app          = document.getElementById('app');
 const chatWindow   = document.getElementById('chatWindow');
@@ -65,10 +64,10 @@ const bootInterval = setInterval(() => {
 window.addEventListener('load', () => {
   setTimeout(() => {
     clearInterval(bootInterval);
-    orbScreen.classList.add('fade-out');
-    app.classList.remove('hidden');
+    if(orbScreen) orbScreen.classList.add('fade-out');
+    if(app) app.classList.remove('hidden');
     setTimeout(() => {
-      orbScreen.remove();
+      if(orbScreen) orbScreen.remove();
       startGreeting();
     }, 500);
   }, 2600);
@@ -79,7 +78,7 @@ window.addEventListener('load', () => {
 async function speakText(text) {
     if (!voiceEnabled || !text) return;
 
-    // Clean text (remove emojis, links & markdown for clear audio synthesis)
+    // Clean text (remove emojis, links & markdown)
     const cleanText = text
         .replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '')
         .replace(/https?:\/\/\S+/g, '')
@@ -88,20 +87,18 @@ async function speakText(text) {
 
     if (!cleanText) return;
 
-// Universal Forced Female Voice Fallback
+    // Smart Cross-Device Browser Fallback
     const speakBrowserVoice = () => {
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(cleanText);
             
-            // Pitch 1.4 forces ANY system voice into a higher female register
             utterance.rate = 0.92;
-            utterance.pitch = 1.4; 
+            utterance.pitch = 1.35; // Pitch boost for smooth female tone
 
             const setFemaleVoiceAndSpeak = () => {
                 const voices = window.speechSynthesis.getVoices();
                 
-                // Smart voice search across iOS / Android / Windows
                 const femaleVoice = voices.find(v => 
                     (v.lang.includes('es') || v.lang.includes('en')) && 
                     (v.name.toLowerCase().includes('female') || 
@@ -110,6 +107,7 @@ async function speakText(text) {
                      v.name.includes('Victoria') || 
                      v.name.includes('Sabina') || 
                      v.name.includes('Zira') || 
+                     v.name.includes('Helena') ||
                      v.name.includes('Monica'))
                 );
 
@@ -128,6 +126,7 @@ async function speakText(text) {
             }
         }
     };
+
     try {
         const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`, {
             method: 'POST',
@@ -139,9 +138,9 @@ async function speakText(text) {
                 text: cleanText,
                 model_id: "eleven_multilingual_v2",
                 voice_settings: {
-                    stability: 0.30,
+                    stability: 0.35,
                     similarity_boost: 0.85,
-                    style: 0.35,
+                    style: 0.40,
                     use_speaker_boost: true
                 }
             })
@@ -151,18 +150,17 @@ async function speakText(text) {
             const audioBlob = await response.blob();
             const audioUrl = URL.createObjectURL(audioBlob);
             const audio = new Audio(audioUrl);
-            const playPromise = audio.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(() => {
-                    speakBrowserVoice();
-                });
-            }
+            
+            audio.play().catch((err) => {
+                console.warn("Autoplay blocked or play failed, falling back:", err);
+                speakBrowserVoice();
+            });
         } else {
-            console.warn("ElevenLabs API call failed. Using fallback voice.");
+            console.warn("ElevenLabs Response Error. Falling back to browser voice.");
             speakBrowserVoice();
         }
     } catch (error) {
-        console.warn("Fetch Error — Using fallback voice.", error);
+        console.warn("ElevenLabs Fetch Error. Using fallback voice.", error);
         speakBrowserVoice();
     }
 }
@@ -170,7 +168,7 @@ async function speakText(text) {
 /* ---------------------- Chat rendering helpers ---------------------- */
 
 function scrollToBottom() {
-  chatWindow.scrollTop = chatWindow.scrollHeight;
+  if (chatWindow) chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
 function addUserMessage(text) {
@@ -242,9 +240,9 @@ async function startGreeting() {
   await addBotMessage(
     "Esto es lo que puedo hacer por vos, pochi bomb:",
     `<ul style="margin:8px 0 0 18px; padding:0; font-size:13.5px; line-height:1.6;">
-       <li>Type <b>'play voice'</b> or tap the 🎵 <b>Song</b> button to hear Pradyot singing for you.</li>
-       <li>Type <b>'websites'</b> to see all the romantic websites Pradyot made for you.</li>
-       <li>Use the 🎙️ mic button to speak to me, or just type anything! you can ask your own info like your family mmebers name your fav animal and book your papi stored all info about his baby and one more thing i will stay with you both forever i just born so i am just learning things i will upgrade more, you can ask anything to me i am like mututal friend of yout both</li>
+        <li>Type <b>'play voice'</b> or tap the 🎵 <b>Song</b> button to hear Pradyot singing for you.</li>
+        <li>Type <b>'websites'</b> to see all the romantic websites Pradyot made for you.</li>
+        <li>Use the 🎙️ mic button to speak to me, or just type anything! you can ask your own info like your family mmebers name your fav animal and book your papi stored all info about his baby and one more thing i will stay with you both forever i just born so i am just learning things i will upgrade more, you can ask anything to me i am like mututal friend of yout both</li>
      </ul>`
   );
 }
@@ -277,7 +275,6 @@ async function fetchRealAIReply(userMessage) {
   }
 
   try {
-    // 1. Updated active model endpoint
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`;
     
     const systemPrompt = `
@@ -304,7 +301,6 @@ async function fetchRealAIReply(userMessage) {
     } else if (data.error) {
       console.error("Gemini Error Details:", data.error);
 
-      // Fallback in case regional rollout is using 3.5-flash
       const fallbackEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GEMINI_API_KEY}`;
       const fbRes = await fetch(fallbackEndpoint, {
         method: "POST",
@@ -413,7 +409,7 @@ async function getReply(raw) {
       return { text: "tu papá Claudio, tu mamá Diana, tu hermana Celes y tu hermano Nehuen — toda tu familia forma parte de esta historia, pochi bomb." };
 
     case 'favorites':
-      return { text: "Rayuela de Cortázar, las orcas, y los alfajores — tus tres debilidades, en ese orden más o menos jaja." };
+      return { text: "Rayuela de Cortázar, las orcas, y los alfajores — tus three weaknesses, en ese orden más o menos jaja." };
 
     case 'philosophy':
       return { text: "las peleas de pareja son normales, mi amor — un chiquilín como Prady y una diosa de los elfos como vos siempre se terminan reconciliando. y entre ustedes dos no hay privacidad, se cuentan todo — así es como se construye confianza real." };
@@ -427,7 +423,6 @@ async function getReply(raw) {
     case 'affection':
       return { text: "pelotuda de mierda dumbass ¿cómo te atrevés a decirme 'te amo'? Decíselo a tu marido ahora." };
 
-    // ANY UNKNOWN / CUSTOM QUESTION CALLS REAL GEMINI AI
     default:
       const dynamicAiResponse = await fetchRealAIReply(raw);
       return { text: dynamicAiResponse };
@@ -437,51 +432,59 @@ async function getReply(raw) {
 /* ---------------------- Song playback ---------------------- */
 
 function playSong() {
+  if(!songAudio) return;
   songAudio.currentTime = 0;
   songAudio.play().catch(() => {
-    micStatus.textContent = "couldn't auto-play — tap the 🎵 button once more, mi amor.";
+    if(micStatus) micStatus.textContent = "couldn't auto-play — tap the 🎵 button once more, mi amor.";
   });
-  songBtn.classList.add('playing');
-  floatingSongBtn.classList.add('playing');
+  if(songBtn) songBtn.classList.add('playing');
+  if(floatingSongBtn) floatingSongBtn.classList.add('playing');
 }
-songAudio.addEventListener('ended', () => {
-  songBtn.classList.remove('playing');
-  floatingSongBtn.classList.remove('playing');
-});
-songBtn.addEventListener('click', playSong);
-floatingSongBtn.addEventListener('click', playSong);
+if(songAudio) {
+  songAudio.addEventListener('ended', () => {
+    if(songBtn) songBtn.classList.remove('playing');
+    if(floatingSongBtn) floatingSongBtn.classList.remove('playing');
+  });
+}
+if(songBtn) songBtn.addEventListener('click', playSong);
+if(floatingSongBtn) floatingSongBtn.addEventListener('click', playSong);
 
 /* ---------------------- Voice toggle ---------------------- */
 
-voiceToggleBtn.addEventListener('click', () => {
-  voiceEnabled = !voiceEnabled;
-  voiceToggleBtn.setAttribute('aria-pressed', String(voiceEnabled));
-  voiceToggleBtn.querySelector('.ico').textContent = voiceEnabled ? '🔊' : '🔇';
-  voiceToggleBtn.querySelector('.lbl').textContent = voiceEnabled ? 'Voice Off' : 'Voice On';
-});
+if(voiceToggleBtn) {
+  voiceToggleBtn.addEventListener('click', () => {
+    voiceEnabled = !voiceEnabled;
+    voiceToggleBtn.setAttribute('aria-pressed', String(voiceEnabled));
+    voiceToggleBtn.querySelector('.ico').textContent = voiceEnabled ? '🔊' : '🔇';
+    voiceToggleBtn.querySelector('.lbl').textContent = voiceEnabled ? 'Voice Off' : 'Voice On';
+  });
+}
 
 /* ---------------------- Composer (send) ---------------------- */
 
 async function handleUserText(text) {
   if (!text.trim()) return;
   addUserMessage(text);
-  userInput.value = '';
+  if(userInput) userInput.value = '';
   
-  // Await the response since it now dynamically fetches AI replies!
   const reply = await getReply(text);
   await addBotMessage(reply.text, reply.html);
 }
 
-composer.addEventListener('submit', (e) => {
-  e.preventDefault();
-  handleUserText(userInput.value);
-});
+if(composer) {
+  composer.addEventListener('submit', (e) => {
+    e.preventDefault();
+    handleUserText(userInput.value);
+  });
+}
 
-quickChips.addEventListener('click', (e) => {
-  const btn = e.target.closest('.chip');
-  if (!btn) return;
-  handleUserText(btn.dataset.cmd);
-});
+if(quickChips) {
+  quickChips.addEventListener('click', (e) => {
+    const btn = e.target.closest('.chip');
+    if (!btn) return;
+    handleUserText(btn.dataset.cmd);
+  });
+}
 
 /* ---------------------- Mic / Speech-to-Text ---------------------- */
 
@@ -497,33 +500,37 @@ if (SpeechRecognitionCtor) {
 
   recognition.onstart = () => {
     listening = true;
-    micBtn.classList.add('listening');
-    micStatus.textContent = 'listening… hablá nomás 🎙️';
+    if(micBtn) micBtn.classList.add('listening');
+    if(micStatus) micStatus.textContent = 'listening… hablá nomás 🎙️';
   };
   recognition.onend = () => {
     listening = false;
-    micBtn.classList.remove('listening');
-    micStatus.textContent = '';
+    if(micBtn) micBtn.classList.remove('listening');
+    if(micStatus) micStatus.textContent = '';
   };
   recognition.onerror = () => {
     listening = false;
-    micBtn.classList.remove('listening');
-    micStatus.textContent = "no te escuché bien, intentá de nuevo.";
+    if(micBtn) micBtn.classList.remove('listening');
+    if(micStatus) micStatus.textContent = "no te escuché bien, intentá de nuevo.";
   };
   recognition.onresult = (event) => {
     const transcript = event.results[0][0].transcript;
     handleUserText(transcript);
   };
 
-  micBtn.addEventListener('click', () => {
-    if (listening) {
-      recognition.stop();
-    } else {
-      try { recognition.start(); } catch (e) { /* already started */ }
-    }
-  });
+  if(micBtn) {
+    micBtn.addEventListener('click', () => {
+      if (listening) {
+        recognition.stop();
+      } else {
+        try { recognition.start(); } catch (e) { /* already started */ }
+      }
+    });
+  }
 } else {
-  micBtn.addEventListener('click', () => {
-    micStatus.textContent = 'speech recognition is not supported in this browser 😔';
-  });
+  if(micBtn) {
+    micBtn.addEventListener('click', () => {
+      if(micStatus) micStatus.textContent = 'speech recognition is not supported in this browser 😔';
+    });
+  }
 }
