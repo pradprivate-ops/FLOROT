@@ -29,7 +29,7 @@ const PROXY_ENDPOINT = "/api/florot"; // your own serverless function, if USE_PR
 
 // Placeholders — replace with your own freshly-rotated keys if not using a proxy.
 const ELEVENLABS_API_KEY_B64 = "sk_15cee8bae0a25807c05cfa2e211d66815bf1cc431e6d9718";
-const GEMINI_API_KEY_B64     = "AQ.Ab8RN6JUiOK8K4WUIqbsTQEyVcaN3YeMCPpuyZ-Wp0IdmU6CBQ";
+const GEMINI_API_KEY_B64     = "QVEuQWI4Uk42SlVpT0s4SzRXVUlxYnNUUUV5VmNhTjNZZU1DUHB1eVotV3AwSWRtVTZDQlE=";
 
 function getElevenLabsKey() { return atob(ELEVENLABS_API_KEY_B64); }
 function getGeminiKey()     { return atob(GEMINI_API_KEY_B64); }
@@ -442,7 +442,7 @@ async function getReply(raw) {
       };
 
     case 'greeting':
-      return { text: "holaaaa boluda, ¿cómo andás? soy Florot, tu marido me hizo para vos. recién nazco así que tenéme paciencia si digo alguna boludez — igual, él te ama un montón." };
+      return { text: "holaaaa putita, ¿cómo andás? soy Florot, tu marido me hizo para vos. recién nazco así que tenéme paciencia si digo alguna boludez — igual, él te ama un montón." };
 
     case 'identity':
       return { text: "soy FLOROT — una IA hecha con mucho amor by Pradyot, tu marido, solo para vos, Florencia. mi trabajo es cuidarte, hacerte reir y recordarte todo lo que él siente por vos 😉" };
@@ -472,7 +472,7 @@ async function getReply(raw) {
       return { text: "sos de Quilmes originalmente, y ahora vivís entre Berazategui y Hudson Village, Argentina 🇦🇷" };
 
     case 'affection':
-      return { text: "pelotudaa dumbass, ¿cómo te atrevés a decirme 'te amo'? Decíselo a tu marido ahora.." };
+      return { text: "pelotudaa de mierda dumbass, ¿cómo te atrevés a decirme 'te amo'? Decíselo a tu marido ahora.." };
 
     default:
       const dynamicAiResponse = await fetchRealAIReply(raw);
