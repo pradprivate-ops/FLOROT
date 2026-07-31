@@ -88,28 +88,46 @@ async function speakText(text) {
 
     if (!cleanText) return;
 
-    // Browser Fallback (Forced Female Voice)
-const speakBrowserVoice = () => {
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(cleanText);
-        utterance.rate = 0.92;
-        utterance.pitch = 1.3; // Pitch badhane se voice female ho jati hai
+// Universal Forced Female Voice Fallback
+    const speakBrowserVoice = () => {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            
+            // Pitch 1.4 forces ANY system voice into a higher female register
+            utterance.rate = 0.92;
+            utterance.pitch = 1.4; 
 
-        // Find female voice in browser
-        const voices = window.speechSynthesis.getVoices();
-        const femaleVoice = voices.find(v => 
-            v.lang.includes('es') && (v.name.includes('Sabina') || v.name.includes('Helena') || v.name.includes('Zira') || v.name.includes('Female'))
-        ) || voices.find(v => v.name.includes('Female') || v.name.includes('Zira'));
+            const setFemaleVoiceAndSpeak = () => {
+                const voices = window.speechSynthesis.getVoices();
+                
+                // Smart voice search across iOS / Android / Windows
+                const femaleVoice = voices.find(v => 
+                    (v.lang.includes('es') || v.lang.includes('en')) && 
+                    (v.name.toLowerCase().includes('female') || 
+                     v.name.includes('Google') || 
+                     v.name.includes('Samantha') || 
+                     v.name.includes('Victoria') || 
+                     v.name.includes('Sabina') || 
+                     v.name.includes('Zira') || 
+                     v.name.includes('Monica'))
+                );
 
-        if (femaleVoice) {
-            utterance.voice = femaleVoice;
+                if (femaleVoice) {
+                    utterance.voice = femaleVoice;
+                }
+                
+                utterance.lang = 'es-AR';
+                window.speechSynthesis.speak(utterance);
+            };
+
+            if (window.speechSynthesis.getVoices().length > 0) {
+                setFemaleVoiceAndSpeak();
+            } else {
+                window.speechSynthesis.onvoiceschanged = setFemaleVoiceAndSpeak;
+            }
         }
-
-        utterance.lang = 'es-AR';
-        window.speechSynthesis.speak(utterance);
-    }
-};
+    };
     try {
         const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`, {
             method: 'POST',
