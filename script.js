@@ -436,7 +436,7 @@ async function getReply(raw) {
   switch (intent.type) {
     case 'song':
       playSong();
-      return { text: "acá va, mi amor 🎶 pushing play on Prady's song for you right now…" };
+      return { text: "specially for florii 🎶" };
 
     case 'websites':
       return {
