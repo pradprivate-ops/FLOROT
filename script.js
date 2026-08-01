@@ -25,7 +25,7 @@
 =========================================================== */
 
 const USE_PROXY = true; // now routed through your Vercel proxy — no keys in this file at all
-const PROXY_ENDPOINT = "https://YOUR-VERCEL-PROJECT.vercel.app/api/florot"; // ← replace after deploying (see api/florot/)
+const PROXY_ENDPOINT = "https://florot.vercel.app/api/florot"; // ← replace after deploying (see api/florot/)
 
 // Only used if you ever flip USE_PROXY back to false for local testing.
 // Leave as placeholders — never commit real keys here.
