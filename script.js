@@ -24,9 +24,8 @@
    keys that were ever pasted into a chat, doc, or public commit.
 =========================================================== */
 
-const USE_PROXY = true; // now routed through your Vercel proxy — no keys in this file at all
-const PROXY_ENDPOINT = "https://florot.vercel.app/api/florot"; // ← replace after deploying (see api/florot/)
-
+const USE_PROXY = true;
+const PROXY_ENDPOINT = "/api/florot";
 // Only used if you ever flip USE_PROXY back to false for local testing.
 // Leave as placeholders — never commit real keys here.
 const ELEVENLABS_API_KEY_B64 = "YOUR_ELEVENLABS_KEY_BASE64_HERE";
