@@ -25,7 +25,7 @@
 =========================================================== */
 
 const USE_PROXY = true;
-const PROXY_ENDPOINT = "/api/florot";
+const PROXY_ENDPOINT = "/api/florot"; // relative, same-origin — no CORS needed
 // Only used if you ever flip USE_PROXY back to false for local testing.
 // Leave as placeholders — never commit real keys here.
 const ELEVENLABS_API_KEY_B64 = "YOUR_ELEVENLABS_KEY_BASE64_HERE";
