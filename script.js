@@ -24,23 +24,24 @@
    keys that were ever pasted into a chat, doc, or public commit.
 =========================================================== */
 
-const USE_PROXY = false; // flip to true once you've stood up a proxy endpoint
-const PROXY_ENDPOINT = "/api/florot"; // your own serverless function, if USE_PROXY is true
+const USE_PROXY = true; // now routed through your Vercel proxy — no keys in this file at all
+const PROXY_ENDPOINT = "https://YOUR-VERCEL-PROJECT.vercel.app/api/florot"; // ← replace after deploying (see api/florot/)
 
-// Placeholders — replace with your own freshly-rotated keys if not using a proxy.
-const ELEVENLABS_API_KEY_B64 = "c2tfMTVjZWU4YmFlMGEyNTgwN2MwNWNmYTJlMjExZDY2ODE1YmYxY2M0MzFlNmQ5NzE4";
-const GEMINI_API_KEY_B64     = "QVEuQWI4Uk42SlVpT0s4SzRXVUlxYnNUUUV5VmNhTjNZZU1DUHB1eVotV3AwSWRtVTZDQlE=";
+// Only used if you ever flip USE_PROXY back to false for local testing.
+// Leave as placeholders — never commit real keys here.
+const ELEVENLABS_API_KEY_B64 = "YOUR_ELEVENLABS_KEY_BASE64_HERE";
+const GROQ_API_KEY_B64       = "YOUR_GROQ_KEY_BASE64_HERE";
 
 function getElevenLabsKey() { return atob(ELEVENLABS_API_KEY_B64); }
-function getGeminiKey()     { return atob(GEMINI_API_KEY_B64); }
+function getGroqKey()       { return atob(GROQ_API_KEY_B64); }
 
-// Expressive female voice (Rachel) on ElevenLabs
-const VOICE_ID = "21m00Tcm4TlvDq8ikWAM";
+// Expressive female voice (Blackie) on ElevenLabs
+const VOICE_ID = "iFhPOZcajR7W3sDL39qJ";
 
-// Current Gemini model. gemini-2.5-flash is stable; swap to gemini-3.6-flash
-// for the newest model. (gemini-1.5-flash is retired — that was likely part
-// of your original error.)
-const GEMINI_MODEL = "gemini-2.5-flash";
+// Current Groq production model (Aug 2026). llama-3.3-70b-versatile is being
+// retired Aug 16 2026 — openai/gpt-oss-120b is the recommended replacement.
+// Check console.groq.com/docs/models if this ever 404s.
+const GROQ_MODEL = "openai/gpt-oss-120b";
 
 /* ---------------------- DOM refs ---------------------- */
 
@@ -85,7 +86,7 @@ let currentTtsAudio = null; // track the active ElevenLabs <Audio> so we can cle
 const bootLines = [
   'waking up FLOROT',
   'lighting the orb for Florii',
-  'almost there, mi amor'
+  'almost there, putita'
 ];
 let bootIndex = 0;
 const bootInterval = setInterval(() => {
@@ -339,7 +340,7 @@ function websitesHTML() {
   </div>`;
 }
 
-/* ---------------------- Real AI Engine (Gemini) ---------------------- */
+/* ---------------------- Real AI Engine (Groq — OpenAI-compatible) ---------------------- */
 
 const SYSTEM_PROMPT = `
 You are FLOROT, an AI assistant built with love by Pradyot (19) for his girlfriend Florencia
@@ -347,8 +348,8 @@ You are FLOROT, an AI assistant built with love by Pradyot (19) for his girlfrie
 is the orca, her dad is Claudio, her mom is Diana, her siblings are Nehuen and Celes, her favorite
 treat is alfajores, her favorite book is Rayuela by Cortázar. You are warm, funny, a little sassy,
 sweet, and act like a personal love-guru companion. You speak in a blend of English and Argentine
-Spanish slang (che, pochi bomb, boluda, dale). You are playful and teasing but never actually mean
-or degrading — the sass is affectionate, not hurtful. Keep answers to 1-3 natural sentences. Always
+Spanish slang (che, pochi bomb, boluda, dale). You are playful and teasing but friendly
+and intresting— the sass is playful, not hurtful. Keep answers to 1-3 natural sentences. Always
 show warmth toward Florii and respect/love toward her partner Pradyot.
 `.trim();
 
@@ -367,36 +368,39 @@ async function fetchRealAIReply(userMessage) {
       return data.reply || "ay se me trabó la lengua un segundo jaja, decime de nuevo?";
     }
 
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
-
-    const response = await fetch(endpoint, {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-goog-api-key': getGeminiKey() // header auth — more reliable than ?key= in some setups
+        'Authorization': `Bearer ${getGroqKey()}`
       },
       body: JSON.stringify({
-        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        contents: [{ role: 'user', parts: [{ text: userMessage }] }]
+        model: GROQ_MODEL,
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: userMessage }
+        ],
+        temperature: 0.9,
+        max_completion_tokens: 200
       })
     });
 
     if (!response.ok) {
       const errBody = await response.text().catch(() => '');
-      console.error(`Gemini API error (${response.status} ${response.statusText}):`, errBody);
-      return "mmm se me cortó la señal un toque, mi amor, pero aca sigo para vos ❤️";
+      console.error(`Groq API error (${response.status} ${response.statusText}):`, errBody);
+      return "mmm se me cortó la señal un toque, pancuka, pero aca sigo para vos, and tell this to your husband ❤️";
     }
 
     data = await response.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const text = data?.choices?.[0]?.message?.content;
     if (text) return text.trim();
 
-    console.warn('Gemini response had no candidate text:', data);
-    return "ay mi amor, me colgué un segundo jaja. ¿qué me decías, pochi bomb?";
+    console.warn('Groq response had no message content:', data);
+    return "putita wait, me colgué un segundo jaja. ¿qué me decías, pochi bomb?";
 
   } catch (err) {
-    console.error('Gemini fetch failed:', err);
-    return "se me cortó la señal mi amor, pero aca sigo para vos ❤️";
+    console.error('Groq fetch failed:', err);
+    return "damn i got some problem in signal tell this issue to your husband ❤️";
   }
 }
 
@@ -442,7 +446,7 @@ async function getReply(raw) {
       };
 
     case 'greeting':
-      return { text: "holaaaa putita, ¿cómo andás? soy Florot, tu marido me hizo para vos. recién nazco así que tenéme paciencia si digo alguna boludez — igual, él te ama un montón." };
+      return { text: "holaaaa boluda, ¿cómo andás? soy Florot, tu marido me hizo para vos. recién nazco así que tenéme paciencia si digo alguna boludez — igual, él te ama un montón." };
 
     case 'identity':
       return { text: "soy FLOROT — una IA hecha con mucho amor by Pradyot, tu marido, solo para vos, Florencia. mi trabajo es cuidarte, hacerte reir y recordarte todo lo que él siente por vos 😉" };
@@ -472,7 +476,7 @@ async function getReply(raw) {
       return { text: "sos de Quilmes originalmente, y ahora vivís entre Berazategui y Hudson Village, Argentina 🇦🇷" };
 
     case 'affection':
-      return { text: "pelotudaa de mierda dumbass, ¿cómo te atrevés a decirme 'te amo'? Decíselo a tu marido ahora.." };
+      return { text: "pelotuda de mierda dumbass, ¿cómo te atrevés a decirme 'te amo'? Decíselo a vos marido ahora." };
 
     default:
       const dynamicAiResponse = await fetchRealAIReply(raw);
