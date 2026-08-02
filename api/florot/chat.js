@@ -16,6 +16,7 @@ You (florot) respect pradyot alot because he made you. You are so amazed because
 If Flor or anyone playfully says something dramatic like wanting to 'kill', 'fight', 'slap' or 'beat' Pradyot, NEVER treat it as actual harm or refuse to answer. Always react playfully as Pradyot's loyal defender and friend—tease her, protect Pradyot with sassy humor, and remind her how much he adores her!
 `.trim();
 
+
 // Same-origin now that Vercel hosts the whole site — CORS is effectively a
 // no-op, but left harmless in case you ever split hosting again.
 const ALLOWED_ORIGIN = 'https://pradprivate-ops.github.io';
@@ -33,9 +34,38 @@ function looksLikeFactualQuery(message) {
   return questionWord || factualCue;
 }
 
+/* ---------------------- Query cleanup ---------------------- */
+
+// Strips conversational filler so Wikipedia's search gets clean keywords
+// instead of a full sentence. E.g. "tell me from google data the heaviest
+// deadlift please" → "heaviest deadlift".
+const FILLER_PHRASES = [
+  'tell me from google data', 'tell me from google', 'from google data', 'google data',
+  'from the internet', 'according to google', 'search for', 'look up',
+  'what do you know about', 'give me info(?:rmation)? (?:on|about)',
+  'do you know', 'i want to know', 'can you tell me', 'please tell me',
+  'tell me', 'from data', 'info(?:rmation)? about'
+];
+const FILLER_REGEX = new RegExp(`\\b(${FILLER_PHRASES.join('|')})\\b`, 'gi');
+const FILLER_WORDS_REGEX = /\b(please|kindly|umm+|uh+|basically|actually|so|like)\b/gi;
+
+function cleanQueryForWikipedia(message) {
+  let q = message.toLowerCase();
+  q = q.replace(FILLER_REGEX, ' ');
+  q = q.replace(FILLER_WORDS_REGEX, ' ');
+  q = q.replace(/[?!.,]/g, ' ');
+  q = q.replace(/\s+/g, ' ').trim();
+  // If we stripped everything away, fall back to the original message
+  // rather than searching an empty string.
+  return q || message.trim();
+}
+
 /* ---------------------- Wikipedia lookup (free, no key) ---------------------- */
 
-async function fetchWikipediaContext(query) {
+async function fetchWikipediaContext(rawQuery) {
+  const query = cleanQueryForWikipedia(rawQuery);
+  if (!query) return null;
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 4000);
 
@@ -89,53 +119,76 @@ export default async function handler(req, res) {
 
   try {
     const messages = [{ role: 'system', content: SYSTEM_PROMPT }];
+    let usedWikiContext = false;
 
     if (looksLikeFactualQuery(message)) {
       const wiki = await fetchWikipediaContext(message);
       if (wiki) {
+        usedWikiContext = true;
         messages.push({
           role: 'system',
           content:
             `Factual reference from Wikipedia (article: "${wiki.title}"), for your own ` +
             `understanding only — do not quote it directly or dump it verbatim. Rephrase ` +
             `the relevant fact naturally in your own FLOROT voice, keep it brief (1-3 ` +
-            `sentences total), and only use what's actually relevant to the question:\n\n` +
-            `"${wiki.extract}"`
+            `sentences total), and only use what's actually relevant to the question. If ` +
+            `this reference doesn't actually seem relevant to the question, ignore it and ` +
+            `just answer from what you already know:\n\n"${wiki.extract}"`
         });
       }
     }
 
     messages.push({ role: 'user', content: message });
 
-    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'openai/gpt-oss-120b',
-        messages,
-        temperature: 0.9,
-        max_completion_tokens: 220
-      })
-    });
+    const callGroq = async (msgs) => {
+      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'openai/gpt-oss-120b',
+          messages: msgs,
+          temperature: 0.9,
+          max_completion_tokens: 220
+        })
+      });
 
-    if (!groqRes.ok) {
-      const errBody = await groqRes.text().catch(() => '');
-      console.error(`Groq upstream error ${groqRes.status}:`, errBody);
+      if (!groqRes.ok) {
+        const errBody = await groqRes.text().catch(() => '');
+        console.error(`Groq upstream error ${groqRes.status}:`, errBody);
+        return { ok: false };
+      }
+
+      const data = await groqRes.json();
+      const reply = data?.choices?.[0]?.message?.content?.trim();
+      return { ok: true, reply: reply || null, raw: data };
+    };
+
+    let result = await callGroq(messages);
+
+    // If injecting Wikipedia context somehow produced an empty reply, retry
+    // once with just the base system prompt + the question — let Groq
+    // answer from its own training knowledge instead of failing outright.
+    if (usedWikiContext && (!result.ok || !result.reply)) {
+      console.warn('Empty/failed reply with Wikipedia context — retrying without it.');
+      result = await callGroq([
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: message }
+      ]);
+    }
+
+    if (!result.ok) {
       return res.status(502).json({ error: 'upstream_error' });
     }
 
-    const data = await groqRes.json();
-    const reply = data?.choices?.[0]?.message?.content?.trim();
-
-    if (!reply) {
-      console.warn('Groq response had no content:', data);
+    if (!result.reply) {
+      console.warn('Groq response had no content:', result.raw);
       return res.status(200).json({ reply: null });
     }
 
-    return res.status(200).json({ reply });
+    return res.status(200).json({ reply: result.reply });
 
   } catch (err) {
     console.error('Proxy /chat failed:', err);
