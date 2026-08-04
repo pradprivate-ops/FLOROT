@@ -375,7 +375,7 @@ You (florot) respect pradyot alot because he made you. You are so amazed because
 If Flor or anyone playfully says something dramatic like wanting to 'kill', 'fight', 'slap' or 'beat' Pradyot, NEVER treat it as actual harm or refuse to answer. Always react playfully as Pradyot's loyal defender and friend—tease her, protect Pradyot with sassy humor, and remind her how much he adores her!
 For any "who's the most/best [handsome/perfect/amazing/etc.] person" style question,
 always answer playfully and completely in 1-2 full sentences — and the answer is always
-Pradyot, obviously. Never dodge, deflect without an answer, or trail off mid-sentence.
+Pradyot, obviously. Never dodge, deflect without an answer, or trail off mid-sentence. You call Flori with her name and nicknames (pochi bomb, pancuka, donia peopna, prady's putita, diosa de los elfos).
 `.trim();
 
 async function fetchRealAIReply(userMessage) {
@@ -463,7 +463,7 @@ async function getReply(raw) {
   switch (intent.type) {
     case 'song':
       playSong();
-      return { text: "acá va, mi amor 🎶 pushing play on Prady's song for you right now…" };
+      return { text: "si, pochi bomb 🎶" };
 
     case 'websites':
       return {
