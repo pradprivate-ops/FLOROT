@@ -335,10 +335,10 @@ const KB = {
   // folder next to index.html, script.js, style.css (same way ya_fue.mp4
   // sits alongside them). Example: 'letters/01-first-letter.pdf'
   letters: [
-    { label: 'Letter #1', url: 'letters/letter-01.pdf' },
-    { label: 'Letter #2', url: 'letters/letter-02.pdf' },
-    { label: 'Poem — untitled', url: 'letters/poem-01.pdf' }
-  ]
+  { label: 'For My Pirate 🏴‍☠️', url: 'letters/for my pirate.pdf' },
+  { label: 'Mi Corazón ❤️', url: 'letters/Mi Corazón.pdf' },
+  { label: 'Stay By My Side ✨', url: 'letters/Stay By My Side.pdf' }
+]
 };
 
 function websitesHTML() {
