@@ -36,7 +36,7 @@ function getElevenLabsKey() { return atob(ELEVENLABS_API_KEY_B64); }
 function getGroqKey()       { return atob(GROQ_API_KEY_B64); }
 
 // Expressive female voice (Rachel) on ElevenLabs
-const VOICE_ID = "21m00Tcm4TlvDq8ikWAM";
+const VOICE_ID = "iFhPOZcajR7W3sDL39qJ";
 
 // Current Groq production model (Aug 2026). llama-3.3-70b-versatile is being
 // retired Aug 16 2026 — openai/gpt-oss-120b is the recommended replacement.
