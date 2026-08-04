@@ -24,8 +24,9 @@
    keys that were ever pasted into a chat, doc, or public commit.
 =========================================================== */
 
-const USE_PROXY = true;
-const PROXY_ENDPOINT = "/api/florot"; // relative, same-origin — no CORS needed
+const USE_PROXY = true; // now routed through your Vercel proxy — no keys in this file at all
+const PROXY_ENDPOINT = "https://YOUR-VERCEL-PROJECT.vercel.app/api/florot"; // ← replace after deploying (see api/florot/)
+
 // Only used if you ever flip USE_PROXY back to false for local testing.
 // Leave as placeholders — never commit real keys here.
 const ELEVENLABS_API_KEY_B64 = "YOUR_ELEVENLABS_KEY_BASE64_HERE";
@@ -34,8 +35,8 @@ const GROQ_API_KEY_B64       = "YOUR_GROQ_KEY_BASE64_HERE";
 function getElevenLabsKey() { return atob(ELEVENLABS_API_KEY_B64); }
 function getGroqKey()       { return atob(GROQ_API_KEY_B64); }
 
-// Expressive female voice (Blackie) on ElevenLabs
-const VOICE_ID = "iFhPOZcajR7W3sDL39qJ";
+// Expressive female voice (Rachel) on ElevenLabs
+const VOICE_ID = "21m00Tcm4TlvDq8ikWAM";
 
 // Current Groq production model (Aug 2026). llama-3.3-70b-versatile is being
 // retired Aug 16 2026 — openai/gpt-oss-120b is the recommended replacement.
@@ -85,7 +86,7 @@ let currentTtsAudio = null; // track the active ElevenLabs <Audio> so we can cle
 const bootLines = [
   'waking up FLOROT',
   'lighting the orb for Florii',
-  'almost there, putita'
+  'almost there, mi amor'
 ];
 let bootIndex = 0;
 const bootInterval = setInterval(() => {
@@ -314,6 +315,7 @@ async function startGreeting() {
     `<ul style="margin:8px 0 0 18px; padding:0; font-size:13.5px; line-height:1.6;">
         <li>Type <b>'play voice'</b> or tap the 🎵 <b>Song</b> button to hear Pradyot singing for you.</li>
         <li>Type <b>'websites'</b> to see all the romantic websites Pradyot made for you.</li>
+        <li>Type <b>'letters'</b> to read the letters and poems Pradyot wrote for you, in order.</li>
         <li>Use the 🎙️ mic button to speak to me, or just type anything — ask about your family, your favorite animal or book, whatever. I just "was born" so I'm still learning, but I'll be here for both of you 💛</li>
      </ul>`
   );
@@ -327,7 +329,13 @@ const KB = {
     { label: 'mi-amor', url: 'https://pradysprivate.github.io/mi-amor/' },
     { label: 'valentine', url: 'https://pradysprivate.github.io/florii-valentine/' },
     { label: 'bouquet', url: 'https://digibouquet.vercel.app/bouquet/31372770-c0cf-4ce0-bca0-b64cc2892a32' }
-  ]
+  ],
+  
+  letters: [
+  { label: 'For My Pirate 🏴‍☠️', url: 'letters/for my pirate.pdf' },
+  { label: 'Mi Corazón ❤️', url: 'letters/Mi Corazón.pdf' },
+  { label: 'Stay By My Side ✨', url: 'letters/Stay By My Side.pdf' }
+]
 };
 
 function websitesHTML() {
@@ -335,6 +343,15 @@ function websitesHTML() {
     ${KB.websites.map(w => `<a href="${w.url}" target="_blank" rel="noopener"
       style="color:#c2185b; font-weight:700; text-decoration:none; border-bottom:1.5px solid rgba(194,24,91,0.35);">
       💌 ${w.label} → ${w.url}
+    </a>`).join('')}
+  </div>`;
+}
+
+function lettersHTML() {
+  return `<div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">
+    ${KB.letters.map((l, i) => `<a href="${l.url}" target="_blank" rel="noopener"
+      style="color:#c2185b; font-weight:700; text-decoration:none; border-bottom:1.5px solid rgba(194,24,91,0.35);">
+      📜 ${i + 1}. ${l.label}
     </a>`).join('')}
   </div>`;
 }
@@ -347,8 +364,8 @@ You are FLOROT, an AI assistant built with love by Pradyot (19) for his girlfrie
 is the orca, her dad is Claudio, her mom is Diana, her siblings are Nehuen and Celes, her favorite
 treat is alfajores, her favorite book is Rayuela by Cortázar. You are warm, funny, a little sassy,
 sweet, and act like a personal love-guru companion. You speak in a blend of English and Argentine
-Spanish slang (che, pochi bomb, boluda, dale). You are playful and teasing but friendly
-and intresting— the sass is playful, not hurtful. Keep answers to 1-3 natural sentences. Always
+Spanish slang (che, pochi bomb, boluda, dale). You are playful and teasing but never actually mean
+or degrading — the sass is affectionate, not hurtful. Keep answers to 1-3 natural sentences. Always
 show warmth toward Florii and respect/love toward her partner Pradyot.
 `.trim();
 
@@ -387,7 +404,7 @@ async function fetchRealAIReply(userMessage) {
     if (!response.ok) {
       const errBody = await response.text().catch(() => '');
       console.error(`Groq API error (${response.status} ${response.statusText}):`, errBody);
-      return "mmm se me cortó la señal un toque, pancuka, pero aca sigo para vos, and tell this to your husband ❤️";
+      return "mmm se me cortó la señal un toque, mi amor, pero aca sigo para vos ❤️";
     }
 
     data = await response.json();
@@ -395,11 +412,11 @@ async function fetchRealAIReply(userMessage) {
     if (text) return text.trim();
 
     console.warn('Groq response had no message content:', data);
-    return "putita wait, me colgué un segundo jaja. ¿qué me decías, pochi bomb?";
+    return "ay mi amor, me colgué un segundo jaja. ¿qué me decías, pochi bomb?";
 
   } catch (err) {
     console.error('Groq fetch failed:', err);
-    return "damn i got some problem in signal tell this issue to your husband ❤️";
+    return "se me cortó la señal mi amor, pero aca sigo para vos ❤️";
   }
 }
 
@@ -414,6 +431,7 @@ function matchIntent(raw) {
 
   if (/play voice|play my song|\bsong\b|cant[a|á]|ya fue/.test(t)) return { type: 'song' };
   if (/website|link|paginas?|sitios?/.test(t)) return { type: 'websites' };
+  if (/letters?|poems?|cartas?|poemas?/.test(t)) return { type: 'letters' };
   if (/^(hola+|hi|hey|hello|buenas)\b/.test(t)) return { type: 'greeting' };
   if (/who (are|r) you|qui[eé]n sos|your name|about yourself/.test(t)) return { type: 'identity' };
   if (/who (made|created|built) you|quien te (hizo|creo)/.test(t)) return { type: 'creator' };
@@ -436,12 +454,18 @@ async function getReply(raw) {
   switch (intent.type) {
     case 'song':
       playSong();
-      return { text: "specially for florii 🎶" };
+      return { text: "acá va, mi amor 🎶 pushing play on Prady's song for you right now…" };
 
     case 'websites':
       return {
         text: "todos estos son los rinconcitos de internet que Prady armó solo para vos, pochi bomb:",
         html: websitesHTML()
+      };
+
+    case 'letters':
+      return {
+        text: "acá tenés las cartas y poemas que Prady te escribió, mi amor — abrilas en orden si querés sentir la historia completa:",
+        html: lettersHTML()
       };
 
     case 'greeting':
@@ -475,7 +499,7 @@ async function getReply(raw) {
       return { text: "sos de Quilmes originalmente, y ahora vivís entre Berazategui y Hudson Village, Argentina 🇦🇷" };
 
     case 'affection':
-      return { text: "pelotuda de mierda dumbass, ¿cómo te atrevés a decirme 'te amo'? Decíselo a vos marido ahora." };
+      return { text: "aww pochi bomb, eso me derrite el corazón digital 🥹 pero guardátelo para Prady, que se muere por escucharte decir eso a él." };
 
     default:
       const dynamicAiResponse = await fetchRealAIReply(raw);
