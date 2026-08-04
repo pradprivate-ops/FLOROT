@@ -473,7 +473,7 @@ async function getReply(raw) {
 
     case 'letters':
       return {
-        text: "acá tenés las cartas y poemas que Prady te escribió, mi amor — abrilas en orden si querés sentir la historia completa:",
+        text: "acá tenés las cartas y poemas que Prady te escribió, diosa de los elfos — abrilas en orden si querés sentir la historia completa:",
         html: lettersHTML()
       };
 
