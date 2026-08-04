@@ -25,7 +25,7 @@
 =========================================================== */
 
 const USE_PROXY = true; // now routed through your Vercel proxy — no keys in this file at all
-const PROXY_ENDPOINT = "https://YOUR-VERCEL-PROJECT.vercel.app/api/florot"; // ← replace after deploying (see api/florot/)
+const PROXY_ENDPOINT = "/api/florot"; // relative — frontend and API live on the same Vercel domain, no CORS needed
 
 // Only used if you ever flip USE_PROXY back to false for local testing.
 // Leave as placeholders — never commit real keys here.
@@ -330,12 +330,15 @@ const KB = {
     { label: 'valentine', url: 'https://pradysprivate.github.io/florii-valentine/' },
     { label: 'bouquet', url: 'https://digibouquet.vercel.app/bouquet/31372770-c0cf-4ce0-bca0-b64cc2892a32' }
   ],
-  
+  // Add PDFs here in the order you want them offered — file paths are
+  // relative to index.html, so drop the actual PDF files in a /letters
+  // folder next to index.html, script.js, style.css (same way ya_fue.mp4
+  // sits alongside them). Example: 'letters/01-first-letter.pdf'
   letters: [
-  { label: 'For My Pirate 🏴‍☠️', url: 'letters/for my pirate.pdf' },
-  { label: 'Mi Corazón ❤️', url: 'letters/Mi Corazón.pdf' },
-  { label: 'Stay By My Side ✨', url: 'letters/Stay By My Side.pdf' }
-]
+    { label: 'Letter #1', url: 'letters/letter-01.pdf' },
+    { label: 'Letter #2', url: 'letters/letter-02.pdf' },
+    { label: 'Poem — untitled', url: 'letters/poem-01.pdf' }
+  ]
 };
 
 function websitesHTML() {
@@ -499,7 +502,7 @@ async function getReply(raw) {
       return { text: "sos de Quilmes originalmente, y ahora vivís entre Berazategui y Hudson Village, Argentina 🇦🇷" };
 
     case 'affection':
-      return { text: "aww pochi bomb, eso me derrite el corazón digital 🥹 pero guardátelo para Prady, que se muere por escucharte decir eso a él." };
+      return { text: "pelotuda de mierda dumbass, ¿cómo te atrevés a decirme 'te amo'? Decíselo a vos marido ahora" };
 
     default:
       const dynamicAiResponse = await fetchRealAIReply(raw);
