@@ -86,7 +86,7 @@ let currentTtsAudio = null; // track the active ElevenLabs <Audio> so we can cle
 const bootLines = [
   'waking up FLOROT',
   'lighting the orb for Florii',
-  'almost there, mi amor'
+  'almost there, putita'
 ];
 let bootIndex = 0;
 const bootInterval = setInterval(() => {
