@@ -2,6 +2,8 @@
 // Keeps GROQ_API_KEY server-side. Set it in Vercel → Project → Settings →
 // Environment Variables. It is NEVER present in any file you commit.
 
+import { redis, REDIS_KEYS, MAX_STORED_HISTORY, MAX_CONTEXT_HISTORY, MAX_STORED_FACTS } from '../../lib/redis.js';
+
 const SYSTEM_PROMPT = `
 You are FLOROT, an AI assistant built with love by Pradyot (19) for his girlfriend Florencia
 (also called Florii or Pochi Bomb, 25, from Quilmes/Berazategui, Argentina). Her favorite animal
@@ -23,6 +25,58 @@ Pradyot, obviously. Never dodge, deflect without an answer, or trail off mid-sen
 // Same-origin now that Vercel hosts the whole site — CORS is effectively a
 // no-op, but left harmless in case you ever split hosting again.
 const ALLOWED_ORIGIN = 'https://pradprivate-ops.github.io';
+
+/* ---------------------- Persistent memory (Upstash Redis) ---------------------- */
+// Every read/write here is wrapped so a Redis outage or misconfigured env
+// vars can NEVER break chat itself — worst case, FLOROT just answers that
+// turn without memory instead of failing.
+
+async function loadMemory() {
+  try {
+    const [history, facts] = await Promise.all([
+      redis.get(REDIS_KEYS.history),
+      redis.get(REDIS_KEYS.facts)
+    ]);
+    return { history: history || [], facts: facts || [] };
+  } catch (err) {
+    console.warn('Memory load failed, continuing without it:', err.message || err);
+    return { history: [], facts: [] };
+  }
+}
+
+async function saveExchange(existingHistory, userMessage, botReply) {
+  try {
+    const updated = [
+      ...existingHistory,
+      { role: 'user', content: userMessage, ts: Date.now() },
+      { role: 'assistant', content: botReply, ts: Date.now() }
+    ].slice(-MAX_STORED_HISTORY);
+    await redis.set(REDIS_KEYS.history, updated);
+  } catch (err) {
+    console.warn('Memory save failed (chat still worked fine):', err.message || err);
+  }
+}
+
+// Opt-in explicit pinning: "remember that ...", "recorda que ...", etc.
+// Deliberately simple and explicit rather than guessing at facts from
+// regular conversation — reliable > clever, avoids storing made-up "facts."
+const REMEMBER_REGEX = /^(?:please\s+)?(?:remember|recorda(?:te)?|acordate)(?:\s+that|\s+que)?\s+(.+)$/i;
+
+function extractPinnedFact(message) {
+  const match = message.trim().match(REMEMBER_REGEX);
+  return match ? match[1].trim() : null;
+}
+
+async function savePinnedFact(existingFacts, factText) {
+  try {
+    const updated = [...existingFacts, { text: factText, ts: Date.now() }].slice(-MAX_STORED_FACTS);
+    await redis.set(REDIS_KEYS.facts, updated);
+    return updated;
+  } catch (err) {
+    console.warn('Fact save failed (chat still worked fine):', err.message || err);
+    return existingFacts;
+  }
+}
 
 /* ---------------------- General-knowledge detection ---------------------- */
 
@@ -121,7 +175,40 @@ export default async function handler(req, res) {
   }
 
   try {
+    const { history, facts } = await loadMemory();
+
+    // Explicit "remember that..." pin, if this message is one
+    const pinnedFactText = extractPinnedFact(message);
+    let updatedFacts = facts;
+    if (pinnedFactText) {
+      updatedFacts = await savePinnedFact(facts, pinnedFactText);
+    }
+
     const messages = [{ role: 'system', content: SYSTEM_PROMPT }];
+
+    if (updatedFacts.length) {
+      messages.push({
+        role: 'system',
+        content:
+          `Things Florii has explicitly asked you to remember about her/them, use naturally ` +
+          `when relevant, never as a checklist:\n` +
+          updatedFacts.map(f => `- ${f.text}`).join('\n')
+      });
+    }
+
+    if (pinnedFactText) {
+      messages.push({
+        role: 'system',
+        content: `Florii just asked you to remember something new — acknowledge it warmly and briefly in this reply.`
+      });
+    }
+
+    // Recent conversation, for continuity across the session/day
+    const recentHistory = history.slice(-MAX_CONTEXT_HISTORY);
+    for (const turn of recentHistory) {
+      messages.push({ role: turn.role, content: turn.content });
+    }
+
     let usedWikiContext = false;
 
     if (looksLikeFactualQuery(message)) {
@@ -172,14 +259,11 @@ export default async function handler(req, res) {
     let result = await callGroq(messages);
 
     // If injecting Wikipedia context somehow produced an empty reply, retry
-    // once with just the base system prompt + the question — let Groq
-    // answer from its own training knowledge instead of failing outright.
+    // once with just the base system prompt + memory + the question — let
+    // Groq answer from its own training knowledge instead of failing outright.
     if (usedWikiContext && (!result.ok || !result.reply)) {
       console.warn('Empty/failed reply with Wikipedia context — retrying without it.');
-      result = await callGroq([
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: message }
-      ]);
+      result = await callGroq(messages.filter(m => !m.content.startsWith('Factual reference')));
     }
 
     if (!result.ok) {
@@ -190,6 +274,10 @@ export default async function handler(req, res) {
       console.warn('Groq response had no content:', result.raw);
       return res.status(200).json({ reply: null });
     }
+
+    // Persist this exchange for next time — never blocks the response, and
+    // never fails the request if Redis has a hiccup (see saveExchange above).
+    await saveExchange(history, message, result.reply);
 
     return res.status(200).json({ reply: result.reply });
 
