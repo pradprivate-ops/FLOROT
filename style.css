@@ -502,7 +502,7 @@ body {
 
 .floating-song-btn {
   position: fixed;
-  bottom: 26px;
+  bottom: 104px; /* raised clear of the composer/send button, was 26px */
   right: 26px;
   z-index: 40;
   width: 60px; height: 60px;
@@ -540,7 +540,15 @@ body {
   .brand-text h1 { font-size: 19px; }
   .msg { max-width: 88%; font-size: 14px; }
   .msg--bot::before { left: -26px; font-size: 14px; }
-  .floating-song-btn { width: 54px; height: 54px; bottom: 18px; right: 18px; font-size: 19px; }
+  .floating-song-btn {
+    width: 54px; height: 54px;
+    /* Cleared above the composer + mic-status text so it can't overlap
+       the send button; env() adds extra room above the iPhone home
+       indicator on devices that have one. */
+    bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+    right: 16px;
+    font-size: 19px;
+  }
 }
 
 /* ---------------- Reduced motion ---------------- */
