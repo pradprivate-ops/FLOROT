@@ -337,7 +337,8 @@ const KB = {
   letters: [
   { label: 'For My Pirate 🏴‍☠️', url: 'letters/for my pirate.pdf' },
   { label: 'Mi Corazón ❤️', url: 'letters/Mi Corazón.pdf' },
-  { label: 'Stay By My Side ✨', url: 'letters/Stay By My Side.pdf' }
+  { label: 'Stay By My Side ✨', url: 'letters/Stay By My Side.pdf' },
+  { label: 'I am with you 💖', url: 'letters/I am with you.pdf' }
 ]
 };
 
