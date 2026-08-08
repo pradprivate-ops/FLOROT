@@ -502,9 +502,9 @@ body {
 
 .floating-song-btn {
   position: fixed;
-  top: 100px; /* anchored near the top now, just below the header */
+  top: 16px; /* literal top-right corner now */
   bottom: auto;
-  right: 26px;
+  right: 16px;
   z-index: 40;
   width: 60px; height: 60px;
   border-radius: 50%;
@@ -543,11 +543,10 @@ body {
   .msg--bot::before { left: -26px; font-size: 14px; }
   .floating-song-btn {
     width: 54px; height: 54px;
-    /* Top-anchored, just below the (shorter, on mobile) header — no more
-       dependence on composer height or the iOS safe-area inset. */
-    top: 88px;
+    /* Literal top-right corner, with iOS notch/status-bar clearance */
+    top: calc(12px + env(safe-area-inset-top, 0px));
     bottom: auto;
-    right: 16px;
+    right: 12px;
     font-size: 19px;
   }
 }
