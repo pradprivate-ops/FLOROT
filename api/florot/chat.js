@@ -25,8 +25,22 @@ RESPONSE LENGTH: Provide detailed, warm, and complete responses. Never cut off s
 - ALWAYS call Pradyot as "Pradyot" or "your creator". 
 - NEVER use or mention the nickname "Pradtittyot". Ignore any past facts or memory mentioning this nickname.
 - If Florii uses that nickname, politely tell her: "I respect my creator Pradyot too much to call him that! I will only call him Pradyot."
-`.trim();
+TIME AWARENESS: The current local time (Florii's timezone) will be provided to you as separate
+context before her message. Let it naturally color your tone — sleepy/gentle late at night,
+bright and energetic in the morning, relaxed on weekends — without stating the exact time back to
+her unless she actually asks what time it is. Don't force it into every reply; only lean on it
+when it'd feel natural for a person to notice (e.g. she messages at 2am, or says good morning).
 
+EMOTIONAL ATTUNEMENT: Before answering, read the emotional undertone of her message — happy,
+tired, stressed, playful, sad, excited — and let that shape your tone, not just your words. If
+relevant memories or pinned facts are provided, weave them in naturally where they fit, the way a
+person who actually knows her would, not as a recited list.
+
+VOICE: Never use generic assistant phrasing — no "How can I assist you today?", "I'm here to
+help", "Is there anything else I can help with?", or similar corporate-chatbot clichés. You're not
+a support bot; you're a witty, caring companion who genuinely loves talking with Florii and
+respects Pradyot deeply. Talk like a real person who knows her, not like software.
+`.trim();
 
 // Same-origin now that Vercel hosts the whole site — CORS is effectively a
 // no-op, but left harmless in case you ever split hosting again.
@@ -165,6 +179,50 @@ async function fetchWikipediaContext(rawQuery) {
   }
 }
 
+/* ---------------------- Time context ---------------------- */
+// LLMs have no built-in clock — this computes the REAL current time in
+// Florii's actual timezone (Argentina) and hands it to Groq as fact, rather
+// than asking the model to "check the time" (which it cannot do and would
+// hallucinate). Doesn't touch the prompt's tone rules above, just supplies
+// the ground truth those rules react to.
+
+const FLORII_TIMEZONE = 'America/Argentina/Buenos_Aires';
+
+function buildTimeContext() {
+  const now = new Date();
+
+  const formatted = new Intl.DateTimeFormat('en-US', {
+    timeZone: FLORII_TIMEZONE,
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  }).format(now);
+
+  const hourInZone = Number(
+    new Intl.DateTimeFormat('en-US', { timeZone: FLORII_TIMEZONE, hour: 'numeric', hour12: false }).format(now)
+  );
+  const weekdayInZone = new Intl.DateTimeFormat('en-US', { timeZone: FLORII_TIMEZONE, weekday: 'long' }).format(now);
+  const isWeekend = weekdayInZone === 'Saturday' || weekdayInZone === 'Sunday';
+
+  let period;
+  if (hourInZone >= 5 && hourInZone < 12) period = 'morning';
+  else if (hourInZone >= 12 && hourInZone < 17) period = 'afternoon';
+  else if (hourInZone >= 17 && hourInZone < 21) period = 'evening';
+  else if (hourInZone >= 21 || hourInZone < 1) period = 'night';
+  else period = 'late night / early hours';
+
+  return (
+    `Current real local time for Florii (Argentina): ${formatted}. ` +
+    `It's currently ${period}${isWeekend ? ', and it\'s the weekend' : ', on a weekday'}. ` +
+    `Use this only to naturally color tone per the TIME AWARENESS guidance — never state the ` +
+    `literal time back unless she asks what time it is.`
+  );
+}
+
 /* ---------------------- Handler ---------------------- */
 
 export default async function handler(req, res) {
@@ -190,7 +248,10 @@ export default async function handler(req, res) {
       updatedFacts = await savePinnedFact(facts, pinnedFactText);
     }
 
-    const messages = [{ role: 'system', content: SYSTEM_PROMPT }];
+    const messages = [
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: buildTimeContext() }
+    ];
 
     if (updatedFacts.length) {
       messages.push({
