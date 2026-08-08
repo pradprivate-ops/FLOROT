@@ -502,7 +502,8 @@ body {
 
 .floating-song-btn {
   position: fixed;
-  bottom: 104px; /* raised clear of the composer/send button, was 26px */
+  top: 100px; /* anchored near the top now, just below the header */
+  bottom: auto;
   right: 26px;
   z-index: 40;
   width: 60px; height: 60px;
@@ -542,10 +543,10 @@ body {
   .msg--bot::before { left: -26px; font-size: 14px; }
   .floating-song-btn {
     width: 54px; height: 54px;
-    /* Cleared above the composer + mic-status text so it can't overlap
-       the send button; env() adds extra room above the iPhone home
-       indicator on devices that have one. */
-    bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+    /* Top-anchored, just below the (shorter, on mobile) header — no more
+       dependence on composer height or the iOS safe-area inset. */
+    top: 88px;
+    bottom: auto;
     right: 16px;
     font-size: 19px;
   }
