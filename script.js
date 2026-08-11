@@ -530,7 +530,7 @@ async function getReply(raw) {
       return { text: "sos de Quilmes originalmente, y ahora vivís entre Berazategui y Hudson Village, Argentina 🇦🇷" };
 
     case 'affection':
-      return { text: "pelotuda de mierda dumbass, ¿cómo te atrevés a decirme 'te amo'? Decíselo a vos marido ahora" };
+      return { text: "pelotuda de mierda dumbass, ¿cómo te atrevés a decirme 'te amo'? Decíselo a tu marido ahora" };
 
     default:
       const dynamicAiResponse = await fetchRealAIReply(raw);
