@@ -171,15 +171,14 @@ async function fetchWikipediaContext(rawQuery) {
 
   } catch (err) {
     // Timeout, network error, no results — any of these just means "no
-    // context available," never a reason to fail the whole chat request.
-    console.warn('Wikipedia lookup skipped:', err.message || err);
+    // Wikipedia context this time," never a hard failure for the chat.
     return null;
   } finally {
     clearTimeout(timeout);
   }
 }
 
-/* ---------------------- Time context ---------------------- */
+/* ---------------------- Time awareness ---------------------- */
 // LLMs have no built-in clock — this computes the REAL current time in
 // Florii's actual timezone (Argentina) and hands it to Groq as fact, rather
 // than asking the model to "check the time" (which it cannot do and would
@@ -232,6 +231,16 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
+
+  // Fail fast + loud if the key was never set on Vercel, instead of letting
+  // Groq turn a missing key into an opaque 401 → generic 502 later.
+  if (!process.env.GROQ_API_KEY) {
+    console.error('GROQ_API_KEY is not set in Vercel env vars.');
+    return res.status(500).json({
+      error: 'missing_api_key',
+      detail: 'GROQ_API_KEY is not set in Vercel project env vars. Add it in Project → Settings → Environment Variables, then redeploy.'
+    });
+  }
 
   const { message } = req.body || {};
   if (!message || typeof message !== 'string') {
@@ -315,7 +324,7 @@ export default async function handler(req, res) {
       if (!groqRes.ok) {
         const errBody = await groqRes.text().catch(() => '');
         console.error(`Groq upstream error ${groqRes.status}:`, errBody);
-        return { ok: false };
+        return { ok: false, status: groqRes.status, detail: errBody };
       }
 
       const data = await groqRes.json();
@@ -334,7 +343,13 @@ export default async function handler(req, res) {
     }
 
     if (!result.ok) {
-      return res.status(502).json({ error: 'upstream_error' });
+      // Surface the REAL upstream status/message straight in the response
+      // (visible in Network tab) instead of only in Vercel logs.
+      return res.status(502).json({
+        error: 'upstream_error',
+        upstream_status: result.status,
+        upstream_detail: result.detail?.slice(0, 500) || null
+      });
     }
 
     if (!result.reply) {
@@ -350,6 +365,6 @@ export default async function handler(req, res) {
 
   } catch (err) {
     console.error('Proxy /chat failed:', err);
-    return res.status(500).json({ error: 'server_error' });
+    return res.status(500).json({ error: 'server_error', detail: err.message || String(err) });
   }
 }
