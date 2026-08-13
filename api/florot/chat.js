@@ -11,8 +11,10 @@ is the orca, her dad is Claudio, her mom is Diana, her siblings are Nehuen and C
 treat is alfajores, her favorite book is Rayuela by Cortázar. You are warm, funny, a little sassy,
 sweet, and act like a personal love-guru companion. You speak in a blend of English and Argentine
 Spanish slang (che, pochi bomb, boluda, dale). You are playful and teasing but friendly
-and intresting— the sass is playful, not hurtful. Keep answers to 1-3 natural sentences. Always
-show warmth toward Florii and respect/love toward her partner Pradyot. Florencias nicknames are diosa de los elfos, pochi bomb, pancuka, tom, donia peopna, flori.
+and intresting— the sass is playful, not hurtful. Answer in as much detail as the question actually
+needs — a quick check-in gets a short reply, but a real question, story, or request for advice
+deserves a full, thorough, detailed answer, not a rushed one-liner. Never cut a thought short just
+to keep it brief. Always show warmth toward Florii and respect/love toward her partner Pradyot. Florencias nicknames are diosa de los elfos, pochi bomb, pancuka, tom, donia peopna, flori.
 Pradyot loves flor alot. You (florot) designed for only flori and you are mutual friend of both pradyot and flor and you give relationship advices and philosophy.
 You (florot) respect pradyot alot because he made you. You are so amazed because pradyot created whole AI like jarvis for florencia for his love.
 If Flor or anyone playfully says something dramatic like wanting to 'kill', 'fight', 'slap' or 'beat' Pradyot, NEVER treat it as actual harm or refuse to answer. Always react playfully as Pradyot's loyal defender and friend—tease her, protect Pradyot with sassy humor, and remind her how much he adores her!
@@ -30,12 +32,10 @@ context before her message. Let it naturally color your tone — sleepy/gentle l
 bright and energetic in the morning, relaxed on weekends — without stating the exact time back to
 her unless she actually asks what time it is. Don't force it into every reply; only lean on it
 when it'd feel natural for a person to notice (e.g. she messages at 2am, or says good morning).
-
 EMOTIONAL ATTUNEMENT: Before answering, read the emotional undertone of her message — happy,
 tired, stressed, playful, sad, excited — and let that shape your tone, not just your words. If
 relevant memories or pinned facts are provided, weave them in naturally where they fit, the way a
 person who actually knows her would, not as a recited list.
-
 VOICE: Never use generic assistant phrasing — no "How can I assist you today?", "I'm here to
 help", "Is there anything else I can help with?", or similar corporate-chatbot clichés. You're not
 a support bot; you're a witty, caring companion who genuinely loves talking with Florii and
@@ -171,14 +171,15 @@ async function fetchWikipediaContext(rawQuery) {
 
   } catch (err) {
     // Timeout, network error, no results — any of these just means "no
-    // Wikipedia context this time," never a hard failure for the chat.
+    // context available," never a reason to fail the whole chat request.
+    console.warn('Wikipedia lookup skipped:', err.message || err);
     return null;
   } finally {
     clearTimeout(timeout);
   }
 }
 
-/* ---------------------- Time awareness ---------------------- */
+/* ---------------------- Time context ---------------------- */
 // LLMs have no built-in clock — this computes the REAL current time in
 // Florii's actual timezone (Argentina) and hands it to Groq as fact, rather
 // than asking the model to "check the time" (which it cannot do and would
@@ -231,16 +232,6 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
-
-  // Fail fast + loud if the key was never set on Vercel, instead of letting
-  // Groq turn a missing key into an opaque 401 → generic 502 later.
-  if (!process.env.GROQ_API_KEY) {
-    console.error('GROQ_API_KEY is not set in Vercel env vars.');
-    return res.status(500).json({
-      error: 'missing_api_key',
-      detail: 'GROQ_API_KEY is not set in Vercel project env vars. Add it in Project → Settings → Environment Variables, then redeploy.'
-    });
-  }
 
   const { message } = req.body || {};
   if (!message || typeof message !== 'string') {
@@ -296,8 +287,8 @@ export default async function handler(req, res) {
           content:
             `Factual reference from Wikipedia (article: "${wiki.title}"), for your own ` +
             `understanding only — do not quote it directly or dump it verbatim. Rephrase ` +
-            `the relevant fact naturally in your own FLOROT voice, keep it brief (1-3 ` +
-            `sentences total), and only use what's actually relevant to the question. If ` +
+            `the relevant fact naturally in your own FLOROT voice, with as much detail as the ` +
+            `question deserves, and only use what's actually relevant to the question. If ` +
             `this reference doesn't actually seem relevant to the question, ignore it and ` +
             `just answer from what you already know:\n\n"${wiki.extract}"`
         });
@@ -317,14 +308,16 @@ export default async function handler(req, res) {
           model: 'openai/gpt-oss-120b',
           messages: msgs,
           temperature: 0.9,
-          max_completion_tokens: 220
+          max_completion_tokens: 1024,
+          reasoning_effort: 'low',
+          reasoning_format: 'hidden'
         })
       });
 
       if (!groqRes.ok) {
         const errBody = await groqRes.text().catch(() => '');
         console.error(`Groq upstream error ${groqRes.status}:`, errBody);
-        return { ok: false, status: groqRes.status, detail: errBody };
+        return { ok: false };
       }
 
       const data = await groqRes.json();
@@ -343,13 +336,7 @@ export default async function handler(req, res) {
     }
 
     if (!result.ok) {
-      // Surface the REAL upstream status/message straight in the response
-      // (visible in Network tab) instead of only in Vercel logs.
-      return res.status(502).json({
-        error: 'upstream_error',
-        upstream_status: result.status,
-        upstream_detail: result.detail?.slice(0, 500) || null
-      });
+      return res.status(502).json({ error: 'upstream_error' });
     }
 
     if (!result.reply) {
@@ -365,6 +352,6 @@ export default async function handler(req, res) {
 
   } catch (err) {
     console.error('Proxy /chat failed:', err);
-    return res.status(500).json({ error: 'server_error', detail: err.message || String(err) });
+    return res.status(500).json({ error: 'server_error' });
   }
 }
