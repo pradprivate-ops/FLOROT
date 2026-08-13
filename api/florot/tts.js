@@ -2,7 +2,7 @@
 // Keeps ELEVENLABS_API_KEY server-side. Set it in Vercel → Project →
 // Settings → Environment Variables. It is NEVER present in any file you commit.
 
-const VOICE_ID = 'iFhPOZcajR7W3sDL39qJ'; // Blackie
+const VOICE_ID = '3Fc5BNDeH7ZBsaXJA25B'; // Florot (own Voice Design voice — free tier API compatible)
 
 // Change this to your GitHub Pages origin (no trailing slash).
 const ALLOWED_ORIGIN = 'https://pradprivate-ops.github.io';
